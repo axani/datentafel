@@ -1,50 +1,46 @@
-function timeConverter(timestamp, mode) {
-    // Returns a localized (german) date time string for an unix timestamp input
-    var
-        dt = new Date(timestamp * 1000),
-        months = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
-        year = dt.getFullYear(),
-        month = months[dt.getMonth()],
-        date = dt.getDate(),
-        hour = dt.getHours(),
-        min = dt.getMinutes(),
-        time
-    ;
-
-    switch (mode) {
-        case "date":
-            time = date + '. ' + month + ' ' + year;
-            break;
-        case "time":
-            time = hour + ':' + min + ' Uhr';
-            break;
-        default:
-        case "datetime":
-            time = date + '. ' + month + ' ' + year + ', ' + hour + ':' + min + ' Uhr';
-            break;
-    }
-    return time;
-}
-
-function getWeatherConditionClass(conditionId) {
+function getWeatherConditionEntity(conditionId, isNight) {
     // Returns icon class name for common weather condition ids (openweathermap api)
-    var className = '';
+    var entity = "&#x1F4FB;"; // radio as default (no service)
     conditionId = parseInt(conditionId);
 
     if (conditionId > 200 && conditionId < 800)
-        className = "icon-rain";
+        // rain
+        entity = "&#x2602;";
     else if (conditionId === 800)
-        className = "icon-clear-sky";
+        // clear sky / sun/moon
+        if (isNight)
+            // sun
+            entity = "&#x1F319;";
+        else
+            // sun
+            entity = "&#x2600;";
     else if (conditionId === 801)
-        className = "icon-partly-cloudy";
+        // partly cloudy
+        entity = "&#x26C5;";
     else if (conditionId > 801 && conditionID < 900)
-        className = "icon-cloudy";
+        // cloudy
+        entity = "&#x2601;";
 
-    return className;
+    return entity;
 }
 
-$(function() {
 
+function isNight(sunrise, sunset) {
+    var
+        now = +(new Date()),
+        sunrise = parseInt(sunrise*1000),
+        sunset = parseInt(sunset*1000)
+    ;
+
+    if (now < sunrise ||
+        now > sunset)
+            return true;
+    else
+        return false;
+}
+
+
+function updateWeatherWidget() {
     // Calls openweathermap.org API and prints current wheather condition
     var
         appid = "",
@@ -54,7 +50,7 @@ $(function() {
 
         requestUrl = apiBase + query, //+ "&appid=" + appid,
 
-        container = $("#status")
+        container = $(".widget.weather")
     ;
 
     var request = $.ajax({
@@ -69,68 +65,50 @@ $(function() {
 
         if ("object" === typeof response) {
 
-            if (response.dt)
-                var date = timeConverter(response.dt, "date");
+            var entity;
 
-            var
-                condition = '',
-                className = '';
+            if (response.cod &&
+                200 === response.cod) {
 
-            if (response.cod) {
+                    var isNightNow = false;
 
-                if (200 !== response.cod) {
-                    switch (response.cod) {
-                        case 403:
-                            condition += "<p>" + response.cod + ": Zugriff nicht erlaubt</p>";
-                            break;
-                        case 404:
-                            condition += "<p>" + response.cod + ": Ort nicht gefunden</p>";
-                            break;
-                        case 500:
-                            condition += "<p>" + response.cod + ": Wetter kaput</p>";
-                            break;
+                    if (response.sys &&
+                        response.sys.sunrise &&
+                        response.sys.sunset) {
+
+                        isNightNow = isNight(response.sys.sunrise, response.sys.sunset);
                     }
-                }
-                else {
 
-                    if (response.name)
-                        condition += "<p>" + response.name + "</p>";
-
-                    if (response.weather && response.weather.length) {
-
-                        condition += "<p>";
-
-                        if (response.weather[0].id) {
-                            className = getWeatherConditionClass(response.weather[0].id);
-                            condition += "<i class='" + className + "'></i>";
-                        }
-
-                        if (response.weather[0].icon)
-                            condition += "<img src='http://openweathermap.org/img/w/" + response.weather[0].icon + ".png' alt='' /> ";
-
-                        if (response.weather[0].description)
-                            condition += "<span>" + response.weather[0].description + "</span>";
-
-                        condition += "</p>";
+                    if (response.weather &&
+                        response.weather.length &&
+                        response.weather[0].id) {
+                            // set icon corresponding to weather condition id
+                            entity = getWeatherConditionEntity(response.weather[0].id, isNightNow);
+                            container.find(".ss-icon").html(entity);
                     }
+
+
                     if (response.main &&
                         response.main.temp)
-                            condition += "<p>" + response.main.temp + "°C</p>";
+                            container.find(".temperature").html(response.main.temp + "° C");
 
-                    if (date)
-                        condition += "<small>(aktualisiert: " + date + ")</small>";
-                }
-
-                container.html(condition);
+            } else {
+                // set default icon (no service)
+                container.find(".ss-icon").html(getWeatherConditionEntity());
             }
-
-            // $("#log").html("<p></p><small>" + request.status + ': ' + request.statusText + "</small>");
         }
         console.log(response);
     });
 
     request.fail(function(jqXHR, textStatus) {
-        $("#log").append("<p>Momentan leider kein Wetter</p><small>" + jqXHR.status + ': ' + jqXHR.statusText + "</small>");
+        // set default icon (no service)
+        container.find(".ss-icon").html(getWeatherConditionEntity());
         console.log(jqXHR);
     });
+}
+
+$(function() {
+
+    updateWeatherWidget();
+    window.setInterval(updateWeatherWidget, 300000);
 });
