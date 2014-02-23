@@ -111,6 +111,8 @@ p.date, p.time {
     position: relative;
     top: 20px;
     margin: 0 20px;
+    width: 80px;
+    background-color: #718496;
 }
 
 .song-info {
