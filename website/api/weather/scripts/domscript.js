@@ -26,13 +26,31 @@ function timeConverter(timestamp, mode) {
     return time;
 }
 
+function getWeatherConditionClass(conditionId) {
+    // Returns icon class name for common weather condition ids (openweathermap api)
+    var className = '';
+    conditionId = parseInt(conditionId);
+
+    if (conditionId > 200 && conditionId < 800)
+        className = "icon-rain";
+    else if (conditionId === 800)
+        className = "icon-clear-sky";
+    else if (conditionId === 801)
+        className = "icon-partly-cloudy";
+    else if (conditionId > 801 && conditionID < 900)
+        className = "icon-cloudy";
+
+    return className;
+}
+
 $(function() {
 
-    // Calls openweathermap.org API and prints current wheather status
+    // Calls openweathermap.org API and prints current wheather condition
     var
         appid = "",
         apiBase = "http://api.openweathermap.org/data/2.5/weather?q=",
         query = "Leipzig,de&units=metric&lang=de",
+
 
         requestUrl = apiBase + query, //+ "&appid=" + appid,
 
@@ -54,49 +72,56 @@ $(function() {
             if (response.dt)
                 var date = timeConverter(response.dt, "date");
 
-            var status = '';
+            var
+                condition = '',
+                className = '';
 
             if (response.cod) {
 
                 if (200 !== response.cod) {
                     switch (response.cod) {
                         case 403:
-                            status += "<p>" + response.cod + ": Zugriff nicht erlaubt</p>";
+                            condition += "<p>" + response.cod + ": Zugriff nicht erlaubt</p>";
                             break;
                         case 404:
-                            status += "<p>" + response.cod + ": Ort nicht gefunden</p>";
+                            condition += "<p>" + response.cod + ": Ort nicht gefunden</p>";
                             break;
                         case 500:
-                            status += "<p>" + response.cod + ": Wetter kaput</p>";
+                            condition += "<p>" + response.cod + ": Wetter kaput</p>";
                             break;
                     }
                 }
                 else {
 
                     if (response.name)
-                        status += "<p>" + response.name + "</p>";
+                        condition += "<p>" + response.name + "</p>";
 
                     if (response.weather && response.weather.length) {
 
-                        status += "<p>";
+                        condition += "<p>";
+
+                        if (response.weather[0].id) {
+                            className = getWeatherConditionClass(response.weather[0].id);
+                            condition += "<i class='" + className + "'></i>";
+                        }
 
                         if (response.weather[0].icon)
-                            status += "<img src='http://openweathermap.org/img/w/" + response.weather[0].icon + ".png' alt='' /> ";
+                            condition += "<img src='http://openweathermap.org/img/w/" + response.weather[0].icon + ".png' alt='' /> ";
 
                         if (response.weather[0].description)
-                            status += "<span>" + response.weather[0].description + "</span>";
+                            condition += "<span>" + response.weather[0].description + "</span>";
 
-                        status += "</p>";
+                        condition += "</p>";
                     }
                     if (response.main &&
                         response.main.temp)
-                            status += "<p>" + response.main.temp + "°C</p>";
+                            condition += "<p>" + response.main.temp + "°C</p>";
 
                     if (date)
-                        status += "<small>(aktualisiert: " + date + ")</small>";
+                        condition += "<small>(aktualisiert: " + date + ")</small>";
                 }
 
-                container.html(status);
+                container.html(condition);
             }
 
             // $("#log").html("<p></p><small>" + request.status + ': ' + request.statusText + "</small>");
