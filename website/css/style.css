@@ -46,7 +46,7 @@ p.date, p.time {
     font-size: 40px;
 }
 
-.user_list {
+.user-list {
     display: inline-block;
     width: 10%;
     line-height: 2em;
@@ -61,7 +61,7 @@ p.date, p.time {
     color: #F36E76;
 }
 
-.user_shout {
+.user-shout {
     color: #f8f370;
     display: inline-block;
     height: 600px;
@@ -75,7 +75,7 @@ p.date, p.time {
     overflow: hidden;
 }
 
-.user_shout img {
+.user-shout img {
     height: auto;
     height: 60%;
     margin-top: 15%;
@@ -83,7 +83,7 @@ p.date, p.time {
     max-width: 100%;
 }
 
-.user_shout p {
+.user-shout p {
     margin-top: 8%;
 
 }
